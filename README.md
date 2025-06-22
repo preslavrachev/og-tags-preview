@@ -1,5 +1,5 @@
 # Open Graph tags url preview service
-A simple API that extracts and returns [Open Graph](https://ogp.me/) tags from a given URL in JSON format. Includes caching using [Redis](https://github.com/redis/redis), circuit breakers, basic error handling, metrics monitoring with [Prometheus](https://github.com/prometheus/prometheus), and a reverse proxy using [Caddy](https://github.com/caddyserver/caddy).
+A simple API that extracts and returns [Open Graph](https://ogp.me/) tags from a given URL in JSON format. Includes caching using Redis, circuit breakers, error handling, metrics monitoring with Prometheus, and a reverse proxy using Caddy.
 
 It won't work for sites that prevent bots like Reddit, X(Twitter), etc.
 
