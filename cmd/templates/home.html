@@ -1,0 +1,166 @@
+{{ define "home" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OG Tags</title>
+</head>
+<body style="background-color: rgb(60, 60, 60);">
+  
+  <header style="display: flex; justify-content: flex-end; align-items: center; padding: 1rem;">
+  <a href="https://github.com/your/repo" target="_blank" style="text-decoration: none; padding-right: 15px;">
+    <svg xmlns="http://www.w3.org/2000/svg" height="32" width="32" viewBox="0 0 16 16" fill="white">
+      <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.69-1.07-2.69-1.07a2.1 2.1 0 00-.88-1.16c-.72-.5.06-.5.06-.5a1.66 1.66 0 011.2.8 1.68 1.68 0 002.3.65c.02-.5.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.96a3.1 3.1 0 01.83-2.14 2.9 2.9 0 01.08-2.11s.67-.22 2.2.82a7.6 7.6 0 014 0c1.52-1.04 2.2-.82 2.2-.82.43 1.1.16 1.92.08 2.12a3.1 3.1 0 01.83 2.14c0 3.08-1.87 3.76-3.65 3.95.29.25.53.74.53 1.48v2.2c0 .22.15.46.56.38A8 8 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+  </a>
+  </header>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 0rem;">
+  <h1 style="color: white; font-size: 4rem;">Open Graph tag preview</h1>
+  <input
+  type="text"
+  id="urlInput"
+  placeholder="Enter URL"
+  style="padding: 0.5rem 1rem; border-radius: 9999px; border: 2px solid #000000; width: 600px; font-size: 1rem;"
+  >
+  <p id="errorMsg" style="color: #f05858; margin: 0; padding: 4px 8px; background-color: rgba(0,0,0,0.3); border-radius: 4px;">
+  </p>
+
+  <div style="position: relative; width: 100%; max-width: 1000px; margin: auto;">
+  <textarea
+    id="result"
+    style="width: 100%; min-height: 400px; height: 500px; padding: 1rem; box-sizing: border-box;"
+    readonly
+  ></textarea>
+  <button
+    id="copyBtn"
+    onclick="copyText()"
+    title="Copy"
+    style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      width: 24px;
+      height: 24px;
+    "
+  >
+    <!-- Clipboard SVG icon -->
+    <svg
+      id="iconClipboard"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      viewBox="0 0 24 24"
+      style="width: 20px; height: 20px;"
+    >
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+    </svg>
+    <!-- Tickmark SVG icon, hidden by default -->
+    <svg
+      id="iconTick"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      viewBox="0 0 24 24"
+      style="width: 20px; height: 20px; display: none;"
+    >
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  </button>
+  </div>
+
+  <script>
+    const input = document.getElementById("urlInput");
+    const errorMsg = document.getElementById("errorMsg");
+
+    input.addEventListener("keydown", async function (e) {
+    if (e.key === "Enter") {
+      const url = input.value.trim();
+      if (!url) return;
+
+      errorMsg.textContent = "";
+      result.value = "Loading...";
+
+      try {
+        const res = await fetch('/og', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        if (!res.ok) {
+          result.value = "";
+
+          if (res.status === 400) {
+            errorMsg.textContent = "Bad Request: Missing or invalid input.";
+          } else if (res.status === 422) {
+            errorMsg.textContent = "Unprocessable Entity: The URL format is invalid.";
+          } else if (res.status === 500) {
+            errorMsg.textContent = "Server Error: Something went wrong. Please try again later.";
+          } else {
+            errorMsg.textContent = "Unexpected Error: " + res.status;
+          }
+
+          return;
+        }
+
+        const data = await res.json();
+        result.value = JSON.stringify(data, null, 2);
+      } catch (err) {
+        result.value = "";
+        errorMsg.textContent = "Network error";
+      }
+    }
+    });
+
+    input.addEventListener("input", function () {
+      if (input.value.trim() === "") {
+        errorMsg.textContent = "";
+      }
+    });
+
+    function copyText() {
+    const textarea = document.getElementById('result');
+    if (!textarea.value) return;
+
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      toggleIcon(true);
+      setTimeout(() => toggleIcon(false), 2000);
+    }).catch(() => {
+      // fallback for older browsers
+      textarea.select();
+      document.execCommand('copy');
+      toggleIcon(true);
+      setTimeout(() => toggleIcon(false), 2000);
+    });
+  }
+
+  function toggleIcon(showTick) {
+    const clipboardIcon = document.getElementById('iconClipboard');
+    const tickIcon = document.getElementById('iconTick');
+    if (showTick) {
+      clipboardIcon.style.display = 'none';
+      tickIcon.style.display = 'inline';
+    } else {
+      clipboardIcon.style.display = 'inline';
+      tickIcon.style.display = 'none';
+    }
+  }
+  </script>
+
+</body>
+</html>
+{{ end }}
