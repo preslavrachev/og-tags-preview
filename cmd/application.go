@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -27,9 +25,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-//go:embed templates
-var templates embed.FS
-
 type config struct {
 	port               string
 	env                string
@@ -48,17 +43,9 @@ type application struct {
 	client    ogtags.OGTagClient
 	cache     ogtags_cache.OGCacheClient
 	validator *validator.Validate
-	tmpl      *template.Template
 }
 
 func newApplication(cfg *config) *application {
-	// init templates
-	tmpl, err := template.ParseFS(templates, "templates/*.html")
-	if err != nil {
-		slog.Error("could not parse templates folder", "err", err.Error())
-		os.Exit(1)
-	}
-
 	// init validator
 	validator := validator.New()
 
@@ -86,7 +73,6 @@ func newApplication(cfg *config) *application {
 		client:    client,
 		cache:     ogtagCache,
 		validator: validator,
-		tmpl:      tmpl,
 	}
 
 	server := &http.Server{
@@ -163,7 +149,6 @@ func (app *application) run() {
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
-	router.HandlerFunc(http.MethodGet, "/", app.homeHandler)
 	router.HandlerFunc(http.MethodGet, "/health", app.healthcheckHandler)
 	router.HandlerFunc(http.MethodPost, "/og", app.ogTagHandler)
 
@@ -172,14 +157,6 @@ func (app *application) routes() http.Handler {
 
 	return app.recoverPanic(router)
 	//return otelhttp.NewHandler(router, "server")
-}
-
-func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
-	err := app.tmpl.ExecuteTemplate(w, "home", nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
 }
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
