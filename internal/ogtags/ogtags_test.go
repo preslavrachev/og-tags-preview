@@ -161,6 +161,45 @@ func Test_GetOGTags(t *testing.T) {
 		assert.Equal(t, got.Tags, want.Tags)
 	})
 
+	t.Run("05_reddit.html", func(t *testing.T) {
+		url := "https://ogp.me/"
+		htmlContent, err := os.ReadFile("testhtml/05_reddit.html")
+		if err != nil {
+			t.Fatalf("Failed to read test file: %v", err)
+		}
+
+		mc := &HTTPClientMock{
+			GetFunc: func(url string) (*http.Response, error) {
+				r := &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(string(htmlContent))),
+				}
+				return r, nil
+			},
+		}
+
+		want := &OGTags{
+			URL: url,
+			Tags: []string{
+				"og:image https://www.redditstatic.com/shreddit/assets/favicon/192x192.png",
+				"og:image:width 256",
+				"og:image:height 256",
+				"og:site_name Reddit",
+				"og:title reddit",
+				"og:ttl 600",
+				"og:type website",
+				"og:url https://www.reddit.com/",
+			},
+		}
+
+		ogTagsclient := New(mc)
+		got, err := ogTagsclient.GetOGTags(url)
+		assert.Nil(t, err)
+		assert.True(t, len(mc.GetCalls()) == 1)
+		assert.Equal(t, got.URL, want.URL)
+		assert.Equal(t, got.Tags, want.Tags)
+	})
+
 	t.Run("http client error", func(t *testing.T) {
 		url := "https://example.com"
 
