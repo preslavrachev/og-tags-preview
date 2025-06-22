@@ -170,7 +170,7 @@ func (app *application) routes() http.Handler {
 	// Prometheus metrics endpoint
 	router.Handler(http.MethodGet, "/metrics", promhttp.Handler())
 
-	return router
+	return app.recoverPanic(router)
 	//return otelhttp.NewHandler(router, "server")
 }
 
