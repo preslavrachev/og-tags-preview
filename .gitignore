@@ -1,2 +1,3 @@
 .env
-/internal/ogtags/testhtml/og-tag-service
+/internal/ogtags/testhtml
+og-tag-service
